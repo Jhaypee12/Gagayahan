@@ -12,7 +12,9 @@ function Dashboard() {
     const navigate = useNavigate();
 
     const studentId = localStorage.getItem("studentId");
-    const isStudent = localStorage.getItem("role") === 'STUDENT';
+    const role = localStorage.getItem("role");
+    const isStudent = role === 'STUDENT';
+    const isAdmin = role === 'ADMIN';
     const params = isStudent ? { student: studentId } : {};
 
     const [courses, setCourses] = useState([]);
@@ -26,6 +28,10 @@ function Dashboard() {
     const [assessments, setAssessments] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
 
+    // admin only
+    const [allStudents, setAllStudents] = useState([]);
+    const [allCourses, setAllCourses] = useState([]);
+
     // pangkuwa
     useEffect(() => {
         axios
@@ -37,6 +43,7 @@ function Dashboard() {
         axios
             .get("http://localhost:5000/students")
             .then((response) => {
+                setAllStudents(response.data);
                 const student = response.data.find((s) => s._id === studentId);
                 if (student) {
                     setFirstName(student.firstName);
@@ -50,6 +57,10 @@ function Dashboard() {
                 .then((response) => {
                     setCourses(response.data);
                 });
+        } else if (isAdmin) {
+            axios
+                .get("http://localhost:5000/courses")
+                .then((response) => setAllCourses(response.data));
         } else {
             axios.get("http://localhost:5000/my-courses").then((response) => setMyCourses(response.data));
             axios.get("http://localhost:5000/grades").then((response) => setGrades(response.data));
@@ -92,8 +103,72 @@ function Dashboard() {
         </div>
     );
 
+    // ---------- ADMIN ----------
+    if (isAdmin) {
+        const teachers = allStudents.filter((s) => s.role === 'TEACHER');
+
+        return (
+            <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
+
+                <Sidebar active="Dashboard" />
+
+                <div style={{ flex: 1, padding: 30 }}>
+
+                    <h1>Admin Dashboard</h1>
+
+                    {welcome}
+
+                    <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+                        <div style={{ ...card, flex: 1, backgroundColor: '#5B27C9', color: '#fff' }}>
+                            <p>Total Students</p>
+                            <h1>{allStudents.filter((s) => s.role === 'STUDENT').length}</h1>
+                        </div>
+                        <div style={{ ...card, flex: 1, backgroundColor: '#2F6BFF', color: '#fff' }}>
+                            <p>Total Teachers</p>
+                            <h1>{teachers.length}</h1>
+                        </div>
+                        <div style={{ ...card, flex: 1 }}>
+                            <p>Total Courses</p>
+                            <h1>{allCourses.length}</h1>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 20 }}>
+
+                        <div style={{ ...card, flex: 1 }}>
+                            <h3>Teachers</h3>
+                            {teachers.length === 0 && <p>No teachers yet.</p>}
+                            {teachers.map((t) => (
+                                <p key={t._id}>
+                                    <b>{t.firstName} {t.lastName}</b><br />
+                                    <span style={{ fontSize: 13, color: '#6B6485' }}>{t.email}</span>
+                                </p>
+                            ))}
+                        </div>
+
+                        <div style={{ ...card, flex: 1 }}>
+                            <h3>Courses</h3>
+                            {allCourses.length === 0 && <p>No courses yet.</p>}
+                            {allCourses.map((c) => (
+                                <p key={c._id}>
+                                    <b>{c.name}</b><br />
+                                    <span style={{ fontSize: 13, color: '#6B6485' }}>
+                                        {c.instructor}
+                                    </span>
+                                </p>
+                            ))}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        );
+    }
+
     // ---------- TEACHER ----------
-    if (!isStudent) {
+    if (role === 'TEACHER') {
         return (
             <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
 
