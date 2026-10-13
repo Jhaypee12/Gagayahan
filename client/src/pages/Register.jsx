@@ -1,0 +1,155 @@
+import { Alert, Button, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+function Register() {
+
+
+    const navigate = useNavigate();
+    const btn = { backgroundColor: '#2F6BFF', padding: '12px', borderRadius: '12px', textTransform: 'none', fontWeight: 600, fontSize: 16, '&:hover': { backgroundColor: '#2559D6' } }
+
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [message, setMessage] = useState("");
+    const [isError, setIsError] = useState(false);
+    const [role, setRole] = useState('STUDENT');
+
+    function registerStudent(){
+
+    if (firstName.trim() === "" || lastName.trim() === "" || email.trim() === "" || password === "" || confirmPassword === "") {
+        setIsError(true);
+        setMessage("Please fill in all fields");
+        return;
+    }
+
+    if (firstName.trim().length < 3 || firstName.trim().length > 20) {
+        setIsError(true);
+        setMessage("First name must be 3 to 20 characters");
+        return;
+    }
+
+    if (lastName.trim().length < 3 || lastName.trim().length > 20) {
+        setIsError(true);
+        setMessage("Last name must be 3 to 20 characters");
+        return;
+    }
+
+    if (!email.includes("@") || !email.includes(".") || email.length > 30) {
+        setIsError(true);
+        setMessage("Please enter a valid email");
+        return;
+    }
+
+    if (password.length < 8 || password.length > 30) {
+        setIsError(true);
+        setMessage("Password must be 8 to 30 characters");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        setIsError(true);
+        setMessage("Passwords do not match");
+        return;
+    }
+
+    axios
+        .get("http://localhost:5000/students")
+        .then((response) => {
+            const existing = response.data.find((student) => student.email === email);
+            if (existing) {
+                setIsError(true);
+                setMessage("Email already registered");
+                return;
+            }
+
+            axios
+                .post("http://localhost:5000/register", {
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password,
+                    role:role,
+                })
+
+                .then((response) => {
+                    setIsError(false);
+                    setMessage(response.data);
+                    setFirstName("");
+                    setLastName("");
+                    setEmail("");
+                    setPassword("");
+                    setConfirmPassword("");
+                    setRole("STUDENT");
+                })
+
+                .catch((error) => {
+                    setIsError(true);
+                    setMessage(error.response ? error.response.data : "Something went wrong");
+                });
+            });
+        }
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
+
+            <div style={{ width: 500, overflow: 'hidden', borderRadius: 24, border: '1px solid #DFD7F0', boxShadow: '0 8px 24px rgba(91, 39, 201, 0.2)' }}>
+
+                <div style={{ position: 'relative', overflow: 'hidden', padding: '30px 30px 60px', backgroundColor: '#5B27C9', color: '#fff' }}>
+
+                    <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', top: -90, right: -90, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF' }}></div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Button onClick={() => navigate("/")} sx={{ color: '#fff', textTransform: 'none', fontWeight: 600, padding: 0, minWidth: 0 }}>← Back to home</Button>
+                            <h2 style={{ margin: 0 }}>LUMEN</h2>
+                        </div>
+                        <h1 style={{ margin: '30px 0 6px' }}>Create your account</h1>
+                        <p style={{ margin: 0 }}>Join a course and start your first lesson today.</p>
+                    </div>
+
+                </div>
+
+                <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
+                    <ToggleButtonGroup value={role} exclusive fullWidth onChange={(e, newRole) => { if (newRole) setRole(newRole); }} sx={{ backgroundColor: '#fff' }}>
+                        <ToggleButton value="STUDENT" sx={{ textTransform: 'none', fontWeight: 600 }}>Student</ToggleButton>
+                        <ToggleButton value="TEACHER" sx={{ textTransform: 'none', fontWeight: 600 }}>Teacher</ToggleButton>
+                    </ToggleButtonGroup>
+                    <br/> <br/>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        
+                        <TextField label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                        <TextField label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)}variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    </div>
+                    <br/>
+
+                    <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <br/> <br/>
+
+                    <TextField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <br/> <br/>
+
+                    <TextField label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <br/> <br/>
+
+                    {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
+
+                    <Button onClick={registerStudent} variant="contained" fullWidth sx={btn}>Register</Button>
+
+                    <p style={{ textAlign:'center', marginTop: 24 }}>
+                        Already have an account? <a onClick={() => navigate("/login")} style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Log in</a>
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+    )
+
+}
+
+export default Register
